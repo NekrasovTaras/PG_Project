@@ -41,9 +41,9 @@ class Player(pygame.sprite.Sprite):
                                  load_image('image_part_024.png'), load_image('image_part_025.png'),
                                  load_image('image_part_026.png'), load_image('image_part_027.png')]
 
-        self.WALK_RIGHT = False
-        self.WALK_LEFT = False
-        self.JUMP = False
+        self.walk_right = False
+        self.walk_left = False
+        self.jump = False
         self.jump_size = 8
         self.fall_size = 1
 
@@ -56,51 +56,51 @@ class Player(pygame.sprite.Sprite):
         self.hero_speed = 10
         all_sprites.add(self.hero)
 
-    def Walk_Left(self):
-        self.WALK_RIGHT = False
-        self.WALK_LEFT = True
+    def walk_left_fu(self):
+        self.walk_right = False
+        self.walk_left = True
 
-    def Walk_Right(self):
-        self.WALK_RIGHT = True
-        self.WALK_LEFT = False
+    def walk_right_fu(self):
+        self.walk_right = True
+        self.walk_left = False
 
-    def Stop_Walk_Left(self):
-        self.WALK_LEFT = False
+    def stop_walk_left_fu(self):
+        self.walk_left = False
 
-    def Stop_Walk_Right(self):
-        self.WALK_RIGHT = False
+    def stop_walk_right_fu(self):
+        self.walk_right = False
 
-    def Jump(self):
-        self.JUMP = True
+    def jump_fu(self):
+        self.jump = True
 
-    def Update(self):
-        if not self.WALK_RIGHT and not self.WALK_LEFT:
+    def update(self):
+        if not self.walk_right and not self.walk_left:
             self.hero.image = self.hero_image
 
-        elif self.WALK_LEFT and self.hero.rect.left > 0:
+        elif self.walk_left and self.hero.rect.left > 0:
             self.hero.rect.left -= self.hero_speed
             self.hero.image = pygame.transform.flip(self.hero_images_walk[self.hod_count], True, False)
             self.hod_count = (self.hod_count + 1) % 26
 
-        elif self.WALK_RIGHT and self.hero.rect.right < 1280:
+        elif self.walk_right and self.hero.rect.right < 1280:
             self.hero.rect.left += self.hero_speed
             self.hero.image = self.hero_images_walk[self.hod_count]
             self.hod_count = (self.hod_count + 1) % 26
 
-        if self.JUMP and self.fall_size == 1:
+        if self.jump and self.fall_size == 1:
             if self.jump_size >= -8:
                 self.hero.rect.bottom -= self.jump_size * abs(self.jump_size)
                 self.jump_size -= 1
             else:
                 self.jump_size = 8
-                self.JUMP = False
+                self.jump = False
 
         collides = pygame.sprite.spritecollide(self.hero, level_1.platformi, False)
         for plat in collides:
             if self.hero.rect.bottom > plat.rect.top:
                 self.hero.rect.bottom = plat.rect.top + 1
 
-        if not collides and self.hero.rect.bottom < 720 and not self.JUMP:
+        if not collides and self.hero.rect.bottom < 720 and not self.jump:
             self.hero.rect.bottom += self.fall_size
             self.fall_size += 1
         else:
@@ -141,17 +141,17 @@ while running:
             running = False
         if event.type == pygame.KEYDOWN:
             if pygame.key.get_pressed()[pygame.K_RIGHT]:
-                Hero.Walk_Right()
+                Hero.walk_right_fu()
             if pygame.key.get_pressed()[pygame.K_LEFT]:
-                Hero.Walk_Left()
+                Hero.walk_left_fu()
             if pygame.key.get_pressed()[pygame.K_SPACE]:
-                Hero.Jump()
+                Hero.jump_fu()
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT:
-                Hero.Stop_Walk_Left()
+                Hero.stop_walk_left_fu()
             if event.key == pygame.K_RIGHT:
-                Hero.Stop_Walk_Right()
-    Hero.Update()
+                Hero.stop_walk_right_fu()
+    Hero.update()
     screen.blit(background_image, (0, 0))
     all_sprites.draw(screen)
     pygame.display.flip()
