@@ -53,7 +53,7 @@ class Player(pygame.sprite.Sprite):
         self.hero.rect.left = 0
         self.hero.rect.bottom = 720
         self.hod_count = 0
-        self.hero_speed = 10
+        self.hero_speed = 5
         all_sprites.add(self.hero)
 
     def walk_left_fu(self):
@@ -95,7 +95,7 @@ class Player(pygame.sprite.Sprite):
                 self.jump_size = 8
                 self.jump = False
 
-        collides = pygame.sprite.spritecollide(self.hero, level_1.platformi, False)
+        collides = pygame.sprite.spritecollide(self.hero, level_1.platforms, False, pygame.sprite.collide_mask)
         for plat in collides:
             if self.hero.rect.bottom > plat.rect.top:
                 self.hero.rect.bottom = plat.rect.top + 1
@@ -112,19 +112,59 @@ class Platform(pygame.sprite.Sprite):
         super().__init__()
         self.image = load_image('platform_fly.png')
         self.rect = self.image.get_rect()
+        self.mask = pygame.mask.from_surface(self.image)
+
+
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.enemy_images_walk = [load_image('image_part_001.png'), load_image('image_part_002.png'),
+                                  load_image('image_part_003.png'), load_image('image_part_004.png'),
+                                  load_image('image_part_005.png'), load_image('image_part_006.png'),
+                                  load_image('image_part_007.png'), load_image('image_part_008.png'),
+                                  load_image('image_part_009.png'), load_image('image_part_010.png'),
+                                  load_image('image_part_011.png'), load_image('image_part_012.png'),
+                                  load_image('image_part_013.png'), load_image('image_part_014.png'),
+                                  load_image('image_part_015.png'), load_image('image_part_016.png'),
+                                  load_image('image_part_017.png'), load_image('image_part_018.png'),
+                                  load_image('image_part_019.png'), load_image('image_part_020.png'),
+                                  load_image('image_part_021.png'), load_image('image_part_023.png'),
+                                  load_image('image_part_024.png'), load_image('image_part_025.png'),
+                                  load_image('image_part_026.png'), load_image('image_part_027.png')]
+
+        self.walk_right_e = False
+        self.walk_left_e = False
+        self.fall_size_e = 1
+
+        self.image = self.enemy_images_walk[20]
+        self.rect = self.image.get_rect()
+        self.enemy_hod_count = 20
+        self.enemy_speed = 2
+
+    def update_e(self):
+        self.image = self.enemy_images_walk[int(self.enemy_hod_count // 1)]
+        self.enemy_hod_count = (self.enemy_hod_count + 0.2) % 26
 
 
 class Level_1(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.platformi = pygame.sprite.Group()
+        self.platforms = pygame.sprite.Group()
+        self.enemies = pygame.sprite.Group()
+        enemies_on_level = [[600, 80], [900, 400]]
         layers_on_level = [[500, 100], [200, 400]]
         for platform in layers_on_level:
             block = Platform()
             block.rect.x = platform[0]
             block.rect.y = platform[1]
-            self.platformi.add(block)
-        all_sprites.add(self.platformi)
+            self.platforms.add(block)
+        for enemy in enemies_on_level:
+            vrag = Enemy()
+            vrag.rect.x = enemy[0]
+            vrag.rect.y = enemy[1]
+            self.enemies.add(vrag)
+        all_sprites.add(self.platforms)
+        all_sprites.add(self.enemies)
 
 
 background_image = load_image('background.png')
@@ -152,6 +192,8 @@ while running:
             if event.key == pygame.K_RIGHT:
                 Hero.stop_walk_right_fu()
     Hero.update()
+    for elem in level_1.enemies:
+        elem.update_e()
     screen.blit(background_image, (0, 0))
     all_sprites.draw(screen)
     pygame.display.flip()
