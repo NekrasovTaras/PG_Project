@@ -1,11 +1,24 @@
 import os
-import pygame
 import sys
+
+import pygame
+import pygame_textinput
+import pygame_widgets
+from pygame_widgets.button import Button
 
 pygame.init()
 size = width, height = 1280, 720
 screen = pygame.display.set_mode(size)
-pygame.display.set_caption('Epic adventure')
+pygame.display.set_caption('Epic Adventure')
+clock = pygame.time.Clock()
+
+
+def start():
+    return
+
+
+def exit_game():
+    exit()
 
 
 def load_image(name, color_key=None):
@@ -21,6 +34,80 @@ def load_image(name, color_key=None):
     else:
         image = image.convert_alpha()
     return image
+
+
+class Nickname:
+    def __init__(self):
+        super().__init__()
+        global nickname_user
+        lobby_image = load_image('lobby.jpg')
+        textinput = pygame_textinput.TextInputVisualizer()
+        textinput.font_color = (255, 255, 255)
+        textinput.cursor_color = (255, 255, 255)
+        font = pygame.font.Font(None, 40)
+        text_input_nick = font.render('Введите имя пользователя (максимум 20 символов):', True, (255, 255, 255))
+        text_enter = font.render('Нажмите Enter, чтобы запустить игру.', True, (255, 255, 255))
+        while True:
+            events = pygame.event.get()
+            screen.blit(lobby_image, (0, 0))
+            screen.blit(textinput.surface, (500, 300))
+            if len(textinput.value) < 20:
+                for event in events:
+                    if event.type == pygame.KEYDOWN and event.key != pygame.K_SPACE:
+                        textinput.update(events)
+            if len(textinput.value) == 20:
+                for event in events:
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_BACKSPACE:
+                        textinput.update(events)
+            screen.blit(text_input_nick, (280, 200))
+            if len(textinput.value) != 0:
+                screen.blit(text_enter, (380, 600))
+            for event in events:
+                if event.type == pygame.QUIT:
+                    exit()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN and len(textinput.value) != 0:
+                    nickname_user = textinput.value
+                    return
+            pygame.display.update()
+            clock.tick(60)
+
+
+class Main_Lobby:
+    def __init__(self):
+        super().__init__()
+        lobby_image = load_image('lobby.jpg')
+        font = pygame.font.Font(None, 50)
+        welcome_text = font.render('Добро пожаловать в Epic Adventure,', True, (255, 255, 255))
+        nickname_text = font.render(f'{nickname_user}!', True, (255, 255, 255))
+        button = Button(
+            screen, 500, 400, 250, 100, text='Начать игру',
+            fontSize=50, margin=20,
+            inactiveColour=(255, 0, 0),
+            pressedColour=(0, 255, 0), radius=20,
+            onClick=lambda: print()
+        )
+        button_exit = Button(
+            screen, 480, 600, 300, 100, text='Выйти из игры',
+            fontSize=50, margin=20,
+            inactiveColour=(255, 0, 0),
+            pressedColour=(0, 255, 0), radius=20,
+            onClick=lambda: exit()
+        )
+        running = True
+        while running:
+            screen.blit(lobby_image, (0, 0))
+            screen.blit(welcome_text, (300, 200))
+            screen.blit(nickname_text, (530, 300))
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.QUIT:
+                    exit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    pos = event.pos
+                    if 750 >= pos[0] >= 500 and 500 >= pos[1] >= 400:
+                        return
+            pygame_widgets.update(events)
+            pygame.display.update()
 
 
 class Player(pygame.sprite.Sprite):
@@ -167,12 +254,13 @@ class Level_1(pygame.sprite.Sprite):
         all_sprites.add(self.enemies)
 
 
+Nickname()
+Main_Lobby()
 background_image = load_image('background.png')
 all_sprites = pygame.sprite.Group()
 level_1 = Level_1()
 Hero = Player()
 FPS = 60
-clock = pygame.time.Clock()
 
 running = True
 while running:
