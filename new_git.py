@@ -193,8 +193,6 @@ class Player(pygame.sprite.Sprite):
         else:
             self.fall_size = 1
 
-        monster
-
         if self.hero.rect.bottom > 720:
             self.hero.rect.bottom = 720
 
