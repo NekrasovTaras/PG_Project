@@ -1,9 +1,9 @@
 import os
-import sys
-
 import pygame
 import pygame_textinput
 import pygame_widgets
+import sys
+from PIL import ImageFont
 from pygame_widgets.button import Button
 
 pygame.init()
@@ -11,14 +11,6 @@ size = width, height = 1280, 720
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption('Epic Adventure')
 clock = pygame.time.Clock()
-
-
-def start():
-    return
-
-
-def exit_game():
-    exit()
 
 
 def load_image(name, size_of_sprite=None, color_key=None):
@@ -42,26 +34,26 @@ class Nickname:
         global nickname_user
         lobby_image = load_image('lobby.jpg')
         textinput = pygame_textinput.TextInputVisualizer()
-        textinput.font_color = (255, 255, 255)
+        textinput.font_color = (255, 255, 200)
         textinput.cursor_color = (255, 255, 255)
-        font = pygame.font.Font(None, 40)
+        font = pygame.font.Font("Arial.ttf", 40)
         text_input_nick = font.render('Введите имя пользователя (максимум 20 символов):', True, (255, 255, 255))
         text_enter = font.render('Нажмите Enter, чтобы запустить игру.', True, (255, 255, 255))
         while True:
             events = pygame.event.get()
             screen.blit(lobby_image, (0, 0))
-            screen.blit(textinput.surface, (500, 300))
+            screen.blit(textinput.surface, (480, 300))
             if len(textinput.value) < 20:
                 for event in events:
                     if event.type == pygame.KEYDOWN and event.key != pygame.K_SPACE:
                         textinput.update(events)
-            if len(textinput.value) == 20:
+            if len(textinput.value) >= 20:
                 for event in events:
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_BACKSPACE:
                         textinput.update(events)
-            screen.blit(text_input_nick, (280, 200))
+            screen.blit(text_input_nick, (153, 200))
             if len(textinput.value) != 0:
-                screen.blit(text_enter, (380, 600))
+                screen.blit(text_enter, (293, 550))
             for event in events:
                 if event.type == pygame.QUIT:
                     exit()
@@ -76,28 +68,29 @@ class Main_Lobby:
     def __init__(self):
         super().__init__()
         lobby_image = load_image('lobby.jpg')
-        font = pygame.font.Font(None, 50)
+        font = pygame.font.Font("Arial.ttf", 50)
+        font_size = ImageFont.truetype("Arial.ttf", 50)
+        font_size = font_size.getsize(f'{nickname_user}!')
         welcome_text = font.render('Добро пожаловать в Epic Adventure,', True, (255, 255, 255))
         nickname_text = font.render(f'{nickname_user}!', True, (255, 255, 255))
         button = Button(
-            screen, 500, 400, 250, 100, text='Начать игру',
+            screen, 515, 400, 250, 100, text='Начать игру',
             fontSize=50, margin=20,
-            inactiveColour=(255, 0, 0),
-            pressedColour=(0, 255, 0), radius=20,
-            onClick=lambda: print()
+            inactiveColour=(221, 3, 225),
+            pressedColour=(0, 255, 0), radius=20
         )
         button_exit = Button(
-            screen, 480, 600, 300, 100, text='Выйти из игры',
+            screen, 490, 600, 300, 100, text='Выйти из игры',
             fontSize=50, margin=20,
-            inactiveColour=(255, 0, 0),
+            inactiveColour=(221, 3, 225),
             pressedColour=(0, 255, 0), radius=20,
             onClick=lambda: exit()
         )
         running = True
         while running:
             screen.blit(lobby_image, (0, 0))
-            screen.blit(welcome_text, (300, 200))
-            screen.blit(nickname_text, (530, 300))
+            screen.blit(welcome_text, (223, 200))
+            screen.blit(nickname_text, ((1280 - font_size[0]) // 2, 300))
             events = pygame.event.get()
             for event in events:
                 if event.type == pygame.QUIT:
@@ -197,7 +190,6 @@ class Player(pygame.sprite.Sprite):
             self.hero.rect.bottom = 720
 
 
-
 class Platform(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -246,8 +238,8 @@ class Level_1(pygame.sprite.Sprite):
         super().__init__()
         self.platforms = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
-        enemies_on_level = [[600, 80], [900, 400]]
-        layers_on_level = [[500, 100], [200, 400]]
+        enemies_on_level = [[300, 215], [900, 315]]
+        layers_on_level = [[100, 100], [300, 300], [500, 500], [700, 400], [1000, 600], [100, 600]]
         for platform in layers_on_level:
             block = Platform()
             block.rect.x = platform[0]
@@ -268,7 +260,7 @@ background_image = load_image('background.png')
 all_sprites = pygame.sprite.Group()
 level_1 = Level_1()
 Hero = Player()
-FPS = 40
+FPS = 60
 
 running = True
 while running:
