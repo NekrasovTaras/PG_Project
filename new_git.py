@@ -5,6 +5,8 @@ import pygame_widgets
 import sys
 from PIL import ImageFont
 from pygame_widgets.button import Button
+import random
+import sqlite3
 
 pygame.init()
 size = width, height = 1280, 720
@@ -104,29 +106,29 @@ class Main_Lobby:
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, enemy):
         super().__init__()
-        self.hero_image = load_image('image_part_022.png')
-        self.hero_images_walk = [load_image('image_part_001.png'), load_image('image_part_002.png'),
-                                 load_image('image_part_003.png'), load_image('image_part_004.png'),
-                                 load_image('image_part_005.png'), load_image('image_part_006.png'),
-                                 load_image('image_part_007.png'), load_image('image_part_008.png'),
-                                 load_image('image_part_009.png'), load_image('image_part_010.png'),
-                                 load_image('image_part_011.png'), load_image('image_part_012.png'),
-                                 load_image('image_part_013.png'), load_image('image_part_014.png'),
-                                 load_image('image_part_015.png'), load_image('image_part_016.png'),
-                                 load_image('image_part_017.png'), load_image('image_part_018.png'),
-                                 load_image('image_part_019.png'), load_image('image_part_020.png'),
-                                 load_image('image_part_021.png'), load_image('image_part_023.png'),
-                                 load_image('image_part_024.png'), load_image('image_part_025.png'),
-                                 load_image('image_part_026.png'), load_image('image_part_027.png')]
+        self.hero_image = load_image('image_part_022.png', (40, 40))
+        self.hero_images_walk = [load_image('image_part_001.png', (40, 40)), load_image('image_part_002.png', (40, 40)),
+                                 load_image('image_part_003.png', (40, 40)), load_image('image_part_004.png', (40, 40)),
+                                 load_image('image_part_005.png', (40, 40)), load_image('image_part_006.png', (40, 40)),
+                                 load_image('image_part_007.png', (40, 40)), load_image('image_part_008.png', (40, 40)),
+                                 load_image('image_part_009.png', (40, 40)), load_image('image_part_010.png', (40, 40)),
+                                 load_image('image_part_011.png', (40, 40)), load_image('image_part_012.png', (40, 40)),
+                                 load_image('image_part_013.png', (40, 40)), load_image('image_part_014.png', (40, 40)),
+                                 load_image('image_part_015.png', (40, 40)), load_image('image_part_016.png', (40, 40)),
+                                 load_image('image_part_017.png', (40, 40)), load_image('image_part_018.png', (40, 40)),
+                                 load_image('image_part_019.png', (40, 40)), load_image('image_part_020.png', (40, 40)),
+                                 load_image('image_part_021.png', (40, 40)), load_image('image_part_023.png', (40, 40)),
+                                 load_image('image_part_024.png', (40, 40)), load_image('image_part_025.png', (40, 40)),
+                                 load_image('image_part_026.png', (40, 40)), load_image('image_part_027.png', (40, 40))]
 
         self.walk_right = False
         self.walk_left = False
         self.jump = False
-        self.jump_size = 8
+        self.jump_size = 5
         self.fall_size = 1
-
+        self.enemy_collide = enemy
         self.hero = pygame.sprite.Sprite()
         self.hero.image = self.hero_image
         self.hero.rect = self.hero.image.get_rect()
@@ -151,9 +153,14 @@ class Player(pygame.sprite.Sprite):
         self.walk_right = False
 
     def jump_fu(self):
+        collides = pygame.sprite.spritecollide(self.hero, level_1.platforms, False)
+        if not collides and self.hero.rect.bottom < 720:
+            return
         self.jump = True
 
     def update(self):
+        collides = pygame.sprite.spritecollide(self.hero, level_1.platforms, False)
+        next_level = pygame.sprite.collide_mask(self.hero, Flag)
         if not self.walk_right and not self.walk_left:
             self.hero.image = self.hero_image
 
@@ -172,11 +179,10 @@ class Player(pygame.sprite.Sprite):
                 self.hero.rect.bottom -= self.jump_size * self.jump_size
                 self.jump_size -= 1
             else:
-                self.jump_size = 8
-                self.fall_size = -8
+                self.jump_size = 6
+                self.fall_size = -6
                 self.jump = False
 
-        collides = pygame.sprite.spritecollide(self.hero, level_1.platforms, False)
         for plat in collides:
             if self.hero.rect.bottom > plat.rect.top:
                 self.hero.rect.bottom = plat.rect.top + 1
@@ -186,51 +192,77 @@ class Player(pygame.sprite.Sprite):
         else:
             self.fall_size = 1
 
+        for enemy in self.enemy_collide:
+            if pygame.sprite.collide_mask(self.hero, enemy):
+                print('***Экран информирующий о поражении***')
+
+        if next_level:
+            print('Переход на уровень 2')
+
         if self.hero.rect.bottom > 720:
             self.hero.rect.bottom = 720
 
+        if self.hero.rect.bottom > 720:
+            self.hero.rect.bottom = 720
+
+        if self.hero.rect.top < 0:
+            self.hero.rect.top = 0
+
 
 class Platform(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.image = load_image('platform1.jpg', (300, 20))
+    def __init__(self, size, cords, *group):
+        super().__init__(*group)
+        self.image = load_image('platform1.jpg', size)
         self.rect = self.image.get_rect()
+        self.rect.center = cords
         self.mask = pygame.mask.from_surface(self.image)
 
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.enemy_images_walk = [load_image('monster1.png', (100, 100)),
-                                  load_image('monster2.png', (100, 100)),
-                                  load_image('monster3.png', (100, 100)),
-                                  load_image('monster4.png', (100, 100)),
-                                  load_image('monster5.png', (100, 100))]
+    def __init__(self, size, cords, border_left, border_right, speed, *group):
+        super().__init__(*group)
+        self.enemy_images_walk = [load_image('monster1.png', size),
+                                  load_image('monster2.png', size),
+                                  load_image('monster3.png', size),
+                                  load_image('monster4.png', size),
+                                  load_image('monster5.png', size)]
         self.walk_right_e = False
         self.walk_left_e = True
         self.fall_size_e = 1
-        self.walk_count = 0
-        self.image = self.enemy_images_walk[0]
+        self.walk_count = random.choice(range(0, 5))
+        self.image = self.enemy_images_walk[self.walk_count]
         self.rect = self.image.get_rect()
-        self.coord_nach = self.rect.right
-        self.enemy_hod_count = 0
-        self.enemy_speed = 2
+        self.rect.center = cords
+        self.enemy_speed = speed
+        self.b_l = border_left
+        self.b_r = border_right
         self.mask = pygame.mask.from_surface(self.image)
 
     def update_e(self):
-        self.image = self.enemy_images_walk[int(self.enemy_hod_count // 1)]
+        self.image = self.enemy_images_walk[int(self.walk_count // 1)]
+
         if self.walk_left_e:
-            self.image = pygame.transform.flip(self.enemy_images_walk[int(self.enemy_hod_count // 1)], True, False)
-        self.enemy_hod_count = (self.enemy_hod_count + 0.2) % 5
-        self.rect.x += self.enemy_speed
-        if self.rect.left - 15 > self.coord_nach:
-            self.walk_left_e = True
-            self.walk_right_e = False
-            self.enemy_speed = -2
-        elif self.rect.left + 15 < self.coord_nach:
-            self.walk_left_e = False
+            self.image = pygame.transform.flip(self.enemy_images_walk[int(self.walk_count // 1)], True, False)
+            self.walk_count = (self.walk_count + 0.2) % 5
+            self.rect.x -= self.enemy_speed
+        elif self.walk_right_e:
+            self.walk_count = (self.walk_count + 0.2) % 5
+            self.rect.x += self.enemy_speed
+        if self.rect.x <= self.b_l:
             self.walk_right_e = True
-            self.enemy_speed = 2
+            self.walk_left_e = False
+        elif self.rect.x >= self.b_r:
+            self.walk_right_e = False
+            self.walk_left_e = True
+
+
+class Flag(pygame.sprite.Sprite):
+    def __init__(self, coord, *group):
+        super().__init__(*group)
+        self.image = load_image('end_flag.png', (50, 50))
+        self.rect = self.image.get_rect()
+        self.rect.center = coord
+        self.mask = pygame.mask.from_surface(self.image)
 
 
 class Level_1(pygame.sprite.Sprite):
@@ -238,20 +270,13 @@ class Level_1(pygame.sprite.Sprite):
         super().__init__()
         self.platforms = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
-        enemies_on_level = [[300, 215], [900, 315]]
-        layers_on_level = [[100, 100], [300, 300], [500, 500], [700, 400], [1000, 600], [100, 600]]
+        enemies_on_level = [[(40, 40), (100, 260), 0, 250, 2], [(60, 60), (800, 460), 600, 800, 1]]
+        layers_on_level = [[(300, 40), (100, 300)], [(80, 40), (300, 430)], [(50, 20), (500, 500)],
+                           [(200, 20), (700, 500)], [(110, 20), (1000, 600)]]
         for platform in layers_on_level:
-            block = Platform()
-            block.rect.x = platform[0]
-            block.rect.y = platform[1]
-            self.platforms.add(block)
+            Platform(platform[0], platform[1], self.platforms, all_sprites)
         for enemy in enemies_on_level:
-            vrag = Enemy()
-            vrag.rect.x = enemy[0]
-            vrag.rect.y = enemy[1]
-            self.enemies.add(vrag)
-        all_sprites.add(self.platforms)
-        all_sprites.add(self.enemies)
+            Enemy(enemy[0], enemy[1], enemy[2], enemy[3], enemy[4], self.enemies, all_sprites)
 
 
 Nickname()
@@ -259,7 +284,8 @@ Main_Lobby()
 background_image = load_image('background.png')
 all_sprites = pygame.sprite.Group()
 level_1 = Level_1()
-Hero = Player()
+Hero = Player(level_1.enemies)
+Flag = Flag((30, 255), all_sprites)
 FPS = 60
 
 running = True
