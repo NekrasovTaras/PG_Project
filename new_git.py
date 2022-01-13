@@ -2,17 +2,18 @@ import os
 import pygame
 import pygame_textinput
 import pygame_widgets
+import random
+import sqlite3
 import sys
 from PIL import ImageFont
 from pygame_widgets.button import Button
-import random
-import sqlite3
 
 pygame.init()
 size = width, height = 1280, 720
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption('Epic Adventure')
 clock = pygame.time.Clock()
+all_sprites = pygame.sprite.Group()
 
 
 def load_image(name, size_of_sprite=None, color_key=None):
@@ -154,13 +155,13 @@ class Player(pygame.sprite.Sprite):
         self.walk_right = False
 
     def jump_fu(self):
-        collides = pygame.sprite.spritecollide(self.hero, level_1.platforms, False)
+        collides = pygame.sprite.spritecollide(self.hero, level.platforms, False)
         if not collides and self.hero.rect.bottom < 720:
             return
         self.jump = True
 
     def update(self):
-        collides = pygame.sprite.spritecollide(self.hero, level_1.platforms, False)
+        collides = pygame.sprite.spritecollide(self.hero, level.platforms, False)
         next_level = pygame.sprite.collide_mask(self.hero, Flag)
         if not self.walk_right and not self.walk_left:
             self.hero.image = self.hero_image
@@ -198,7 +199,7 @@ class Player(pygame.sprite.Sprite):
                 self.death = True
 
         if next_level:
-            print('Переход на уровень 2')
+            level.next_level()
 
         if self.hero.rect.bottom > 720:
             self.hero.rect.bottom = 720
@@ -208,7 +209,6 @@ class Player(pygame.sprite.Sprite):
 
         if self.hero.rect.top < 0:
             self.hero.rect.top = 0
-
 
 
 class Platform(pygame.sprite.Sprite):
@@ -258,18 +258,10 @@ class Enemy(pygame.sprite.Sprite):
             self.walk_left_e = True
 
 
-class Flag(pygame.sprite.Sprite):
-    def __init__(self, coord, *group):
-        super().__init__(*group)
-        self.image = load_image('end_flag.png', (50, 50))
-        self.rect = self.image.get_rect()
-        self.rect.center = coord
-        self.mask = pygame.mask.from_surface(self.image)
-
-
-class Level_1(pygame.sprite.Sprite):
+class Level(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
+        self.number_of_level = 1
         self.platforms = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
         enemies_on_level = [[(40, 40), (100, 260), 0, 220, 2], [(60, 60), (800, 460), 610, 770, 1]]
@@ -280,14 +272,50 @@ class Level_1(pygame.sprite.Sprite):
         for enemy in enemies_on_level:
             Enemy(enemy[0], enemy[1], enemy[2], enemy[3], enemy[4], self.enemies, all_sprites)
 
+    def next_level(self):
+        self.number_of_level += 1
+        for platform in self.platforms:
+            platform.kill()
+        for enemy in self.enemies:
+            enemy.kill()
+        if self.number_of_level == 2:
+            enemies_on_level = [[(40, 40), (100, 165), 25, 300, 2], [(60, 60), (800, 317), 800, 1050, 3],
+                                [(40, 40), (600, 254), 470, 640, 2], [(60, 60), (800, 465), 610, 770, 1]]
+
+            layers_on_level = [[(300, 40), (180, 200)], [(300, 40), (300, 400)], [(100, 40), (300, 550)],
+                               [(70, 20), (150, 600)], [(200, 20), (570, 280)], [(300, 40), (950, 360)],
+                               [(200, 20), (720, 500)], [(110, 20), (1000, 600)], [(110, 20), (1150, 500)]]
+            for platform in layers_on_level:
+                Platform(platform[0], platform[1], self.platforms, all_sprites)
+            for enemy in enemies_on_level:
+                Enemy(enemy[0], enemy[1], enemy[2], enemy[3], enemy[4], self.enemies, all_sprites)
+        Hero.hero.kill()
+        Hero.__init__(level.enemies)
+        pygame.display.flip()
+
+
+level = Level()
+
+
+class Flag(pygame.sprite.Sprite):
+    def __init__(self, coord, *group):
+        super().__init__(*group)
+        if level.number_of_level == 2:
+            self.mask.clear()
+            self.image.kill()
+            coord = (90, 255)
+        self.image = load_image('end_flag.png', (50, 50))
+        self.rect = self.image.get_rect()
+        self.rect.center = coord
+        self.mask = pygame.mask.from_surface(self.image)
+
 
 Nickname()
 Main_Lobby()
 background_image = load_image('background.png')
-all_sprites = pygame.sprite.Group()
-level_1 = Level_1()
-Hero = Player(level_1.enemies)
-Flag = Flag((30, 255), all_sprites)
+Hero = Player(level.enemies)
+Flag = Flag((30, 660), all_sprites)
+pygame.display.flip()
 FPS = 60
 
 running = True
@@ -295,6 +323,8 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            print(event.pos)
         if event.type == pygame.KEYDOWN:
             if pygame.key.get_pressed()[pygame.K_RIGHT]:
                 Hero.walk_right_fu()
@@ -308,7 +338,7 @@ while running:
             if event.key == pygame.K_RIGHT:
                 Hero.stop_walk_right_fu()
     Hero.update()
-    for elem in level_1.enemies:
+    for elem in level.enemies:
         elem.update_e()
     if Hero.death:
         screen.fill([0, 0, 0])
@@ -327,7 +357,7 @@ while running:
                 Hero.death = False
                 Main_Lobby()
                 Hero.hero.kill()
-                Hero.__init__(level_1.enemies)
+                Hero.__init__(level.enemies)
     else:
         screen.blit(background_image, (0, 0))
         all_sprites.draw(screen)
