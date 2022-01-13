@@ -108,6 +108,7 @@ class Main_Lobby:
 class Player(pygame.sprite.Sprite):
     def __init__(self, enemy):
         super().__init__()
+        self.death = False
         self.hero_image = load_image('image_part_022.png', (40, 40))
         self.hero_images_walk = [load_image('image_part_001.png', (40, 40)), load_image('image_part_002.png', (40, 40)),
                                  load_image('image_part_003.png', (40, 40)), load_image('image_part_004.png', (40, 40)),
@@ -194,7 +195,7 @@ class Player(pygame.sprite.Sprite):
 
         for enemy in self.enemy_collide:
             if pygame.sprite.collide_mask(self.hero, enemy):
-                print('***Экран информирующий о поражении***')
+                self.death = True
 
         if next_level:
             print('Переход на уровень 2')
@@ -207,6 +208,7 @@ class Player(pygame.sprite.Sprite):
 
         if self.hero.rect.top < 0:
             self.hero.rect.top = 0
+
 
 
 class Platform(pygame.sprite.Sprite):
@@ -270,9 +272,9 @@ class Level_1(pygame.sprite.Sprite):
         super().__init__()
         self.platforms = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
-        enemies_on_level = [[(40, 40), (100, 260), 0, 250, 2], [(60, 60), (800, 460), 600, 800, 1]]
+        enemies_on_level = [[(40, 40), (100, 260), 0, 220, 2], [(60, 60), (800, 460), 610, 770, 1]]
         layers_on_level = [[(300, 40), (100, 300)], [(80, 40), (300, 430)], [(50, 20), (500, 500)],
-                           [(200, 20), (700, 500)], [(110, 20), (1000, 600)]]
+                           [(200, 20), (720, 500)], [(110, 20), (1000, 600)]]
         for platform in layers_on_level:
             Platform(platform[0], platform[1], self.platforms, all_sprites)
         for enemy in enemies_on_level:
@@ -308,9 +310,28 @@ while running:
     Hero.update()
     for elem in level_1.enemies:
         elem.update_e()
-    screen.blit(background_image, (0, 0))
-    all_sprites.draw(screen)
-    pygame.display.flip()
-    clock.tick(FPS)
+    if Hero.death:
+        screen.fill([0, 0, 0])
+        font = pygame.font.Font("Arial.ttf", 50)
+        death_text_1 = font.render('К сожалению, вы проиграли.', True, (255, 255, 255))
+        death_text_2 = font.render('Попробуйте заново!', True, (255, 255, 255))
+        death_text_3 = font.render('Нажмите Enter, чтобы перейти в главное меню.', True, (255, 255, 255))
+        screen.blit(death_text_1, (305, 200))
+        screen.blit(death_text_2, (405, 300))
+        screen.blit(death_text_3, (83, 600))
+        pygame.display.flip()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                Hero.death = False
+                Main_Lobby()
+                Hero.hero.kill()
+                Hero.__init__(level_1.enemies)
+    else:
+        screen.blit(background_image, (0, 0))
+        all_sprites.draw(screen)
+        pygame.display.flip()
+        clock.tick(FPS)
 
 pygame.quit()
