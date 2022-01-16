@@ -5,9 +5,14 @@ import pygame_widgets
 import random
 import sqlite3
 import sys
+from datetime import datetime
+import time
 from PIL import ImageFont
 from pygame_widgets.button import Button
 
+
+con = sqlite3.connect('game_base.sqlite')
+cur = con.cursor()
 pygame.init()
 size = width, height = 1280, 720
 screen = pygame.display.set_mode(size)
@@ -40,17 +45,17 @@ class Nickname:
         textinput.font_color = (255, 255, 200)
         textinput.cursor_color = (255, 255, 255)
         font = pygame.font.Font("Arial.ttf", 40)
-        text_input_nick = font.render('Введите имя пользователя (максимум 20 символов):', True, (255, 255, 255))
+        text_input_nick = font.render('Введите имя пользователя (максимум 12 символов):', True, (255, 255, 255))
         text_enter = font.render('Нажмите Enter, чтобы запустить игру.', True, (255, 255, 255))
         while True:
             events = pygame.event.get()
             screen.blit(lobby_image, (0, 0))
-            screen.blit(textinput.surface, (480, 300))
-            if len(textinput.value) < 20:
+            screen.blit(textinput.surface, (520, 300))
+            if len(textinput.value) < 12:
                 for event in events:
                     if event.type == pygame.KEYDOWN and event.key != pygame.K_SPACE:
                         textinput.update(events)
-            if len(textinput.value) >= 20:
+            if len(textinput.value) >= 12:
                 for event in events:
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_BACKSPACE:
                         textinput.update(events)
@@ -70,6 +75,7 @@ class Nickname:
 class Main_Lobby:
     def __init__(self):
         super().__init__()
+        self.time_of_game = None
         lobby_image = load_image('lobby.jpg')
         font = pygame.font.Font("Arial.ttf", 50)
         font_size = ImageFont.truetype("Arial.ttf", 50)
@@ -101,9 +107,81 @@ class Main_Lobby:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     pos = event.pos
                     if 750 >= pos[0] >= 500 and 500 >= pos[1] >= 400:
+                        self.time_of_game = time.time()
                         return
             pygame_widgets.update(events)
             pygame.display.update()
+
+
+class Level(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.win = False
+        self.win_time = 0
+        self.number_of_level = 1
+        self.platforms = pygame.sprite.Group()
+        self.enemies = pygame.sprite.Group()
+
+    def next_level(self):
+        global all_sprites
+        all_sprites = pygame.sprite.Group()
+        for platform in self.platforms:
+            platform.kill()
+        for enemy in self.enemies:
+            enemy.kill()
+        try:
+            file = open(f"level_{self.number_of_level}.txt", mode="r", encoding="UTF-8")
+            n = 0
+            enemies_on_level = []
+            layers_on_level = []
+            for line in file.readlines():
+                if line == "":
+                    continue
+                if n == 0:
+                    if line.split()[0] == "Enemy":
+                        n = 1
+                    else:
+                        line = list(map(int, line.split()))
+                        self.Flag = Flag((line[0], line[1]), all_sprites)
+                elif n == 1:
+                    if line.split()[0] == "Platform":
+                        n = 2
+                    else:
+                        line = list(map(int, line.split()))
+                        enemies_on_level.append([(line[0], line[1]), (line[2], line[3]), line[4], line[5], line[6]])
+                elif n == 2:
+                    line = list(map(int, line.split()))
+                    layers_on_level.append([(line[0], line[1]), (line[2], line[3])])
+            for platform in layers_on_level:
+                Platform(platform[0], platform[1], self.platforms, all_sprites)
+            for enemy in enemies_on_level:
+                Enemy(enemy[0], enemy[1], enemy[2], enemy[3], enemy[4], self.enemies, all_sprites)
+            if self.number_of_level == 2:
+                Hero.hero.kill()
+                Hero.__init__(level.enemies)
+            pygame.display.flip()
+        except:
+            self.win_time = time.time() - lobby.time_of_game
+            self.win_time = round(self.win_time, 2)
+            self.win = True
+
+
+class Flag(pygame.sprite.Sprite):
+    def __init__(self, coord, *group):
+        super().__init__(*group)
+        self.image = load_image('end_flag.png', (50, 50))
+        self.rect = self.image.get_rect()
+        self.rect.center = coord
+        self.mask = pygame.mask.from_surface(self.image)
+
+
+class Platform(pygame.sprite.Sprite):
+    def __init__(self, size, cords, *group):
+        super().__init__(*group)
+        self.image = load_image('platform1.jpg', size)
+        self.rect = self.image.get_rect()
+        self.rect.center = cords
+        self.mask = pygame.mask.from_surface(self.image)
 
 
 class Player(pygame.sprite.Sprite):
@@ -212,15 +290,6 @@ class Player(pygame.sprite.Sprite):
             self.hero.rect.top = 0
 
 
-class Platform(pygame.sprite.Sprite):
-    def __init__(self, size, cords, *group):
-        super().__init__(*group)
-        self.image = load_image('platform1.jpg', size)
-        self.rect = self.image.get_rect()
-        self.rect.center = cords
-        self.mask = pygame.mask.from_surface(self.image)
-
-
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, size, cords, border_left, border_right, speed, *group):
         super().__init__(*group)
@@ -259,73 +328,26 @@ class Enemy(pygame.sprite.Sprite):
             self.walk_left_e = True
 
 
-class Level(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.number_of_level = 1
-        self.platforms = pygame.sprite.Group()
-        self.enemies = pygame.sprite.Group()
-
-    def next_level(self):
-        global all_sprites
-        all_sprites = pygame.sprite.Group()
-        if self.number_of_level == 1:
-            self.Flag = Flag((100, 255), all_sprites)
-            enemies_on_level = [[(40, 40), (100, 260), 0, 220, 2], [(60, 60), (800, 460), 610, 770, 1]]
-            layers_on_level = [[(300, 40), (100, 300)], [(80, 40), (300, 430)], [(50, 20), (500, 500)],
-                               [(200, 20), (720, 500)], [(110, 20), (1000, 600)]]
-            for platform in layers_on_level:
-                Platform(platform[0], platform[1], self.platforms, all_sprites)
-            for enemy in enemies_on_level:
-                Enemy(enemy[0], enemy[1], enemy[2], enemy[3], enemy[4], self.enemies, all_sprites)
-
-        else:
-            all_sprites = pygame.sprite.Group()
-            if self.number_of_level == 2:
-                self.Flag = Flag((100, 255), all_sprites)
-                enemies_on_level = [[(40, 40), (100, 165), 25, 300, 2], [(60, 60), (800, 317), 800, 1050, 3],
-                                    [(40, 40), (600, 254), 470, 640, 2], [(60, 60), (800, 465), 610, 770, 1]]
-
-                layers_on_level = [[(300, 40), (180, 200)], [(300, 40), (300, 400)], [(100, 40), (300, 550)],
-                                   [(70, 20), (150, 600)], [(200, 20), (570, 280)], [(300, 40), (950, 360)],
-                                   [(200, 20), (720, 500)], [(110, 20), (1000, 600)], [(110, 20), (1150, 500)]]
-                for platform in layers_on_level:
-                    Platform(platform[0], platform[1], self.platforms, all_sprites)
-                for enemy in enemies_on_level:
-                    Enemy(enemy[0], enemy[1], enemy[2], enemy[3], enemy[4], self.enemies, all_sprites)
-            Hero.hero.kill()
-            Hero.__init__(level.enemies)
-            pygame.display.flip()
-
-
 level = Level()
-
-
-class Flag(pygame.sprite.Sprite):
-    def __init__(self, coord, *group):
-        super().__init__(*group)
-        self.image = load_image('end_flag.png', (50, 50))
-        self.rect = self.image.get_rect()
-        self.rect.center = coord
-        self.mask = pygame.mask.from_surface(self.image)
-
-
 Nickname()
-Main_Lobby()
+lobby = Main_Lobby()
 background_image = load_image('background.png')
+table_image = load_image('Table.png')
+game_over_image = load_image('game_over.jpg')
+win_image = load_image('win.jpg')
+white_screen_image = load_image('white_screen.png')
 level.next_level()
 Hero = Player(level.enemies)
-
 pygame.display.flip()
 FPS = 60
+win_exit = 0
+base_win = 0
 
 running = True
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            print(event.pos)
         if event.type == pygame.KEYDOWN:
             if pygame.key.get_pressed()[pygame.K_RIGHT]:
                 Hero.walk_right_fu()
@@ -341,25 +363,153 @@ while running:
     Hero.update()
     for elem in level.enemies:
         elem.update_e()
-    if Hero.death:
-        screen.fill([0, 0, 0])
+    if level.win:
+        if base_win == 0:
+            name = cur.execute(
+                f"""SELECT Nickname, Time FROM Players""").fetchall()
+            all_nick = []
+            for nick in name:
+                nick = nick[0]
+                all_nick.append(nick)
+            if nickname_user in all_nick:
+                if float(name[all_nick.index(nickname_user)][1]) > level.win_time:
+                    print(name[all_nick.index(nickname_user)][1])
+                    cur.execute(
+                        f"""DELETE from Players WHERE Nickname = '{nickname_user}'""")
+                    cur.execute(
+                        f"""INSERT INTO Players (Nickname, Time, Date)
+                                        VALUES ('{nickname_user}', '{level.win_time}', '{datetime.now().date()}');""")
+                    con.commit()
+            else:
+                cur.execute(
+                    f"""INSERT INTO Players (Nickname, Time, Date)
+                        VALUES ('{nickname_user}', '{level.win_time}', '{datetime.now().date()}');""")
+                con.commit()
+            base_win = 1
+        else:
+            pass
+        if win_exit == 0:
+            screen.blit(win_image, (0, 0))
+            font = pygame.font.Font("Arial.ttf", 50)
+            win_text = font.render('Нажмите Space, чтобы продолжить.', True, (255, 255, 255))
+            screen.blit(win_text, (220, 600))
+            pygame.display.flip()
+        else:
+            players = cur.execute(
+                f"""SELECT * FROM Players ORDER BY Time ASC""").fetchall()
+            screen.fill([255, 255, 255])
+            screen.blit(table_image, (50, 150))
+            font_size = ImageFont.truetype("Arial.ttf", 25)
+            font = pygame.font.Font("Arial.ttf", 25)
+            text = font.render(f'Никнейм:', True, (0, 0, 0))
+            screen.blit(text, (180, 180))
+            text = font.render(f'Время(в секунда):', True, (0, 0, 0))
+            screen.blit(text, (525, 180))
+            text = font.render(f'Дата:', True, (0, 0, 0))
+            screen.blit(text, (980, 180))
+            if len(players) == 1:
+                screen.blit(white_screen_image, (50, 315))
+                size = font_size.getsize(f'{players[0][0]}')
+                text = font.render(f'{players[0][0]}', True, (0, 0, 0))
+                screen.blit(text, (25 + (435 - size[0]) // 2, 270))
+                size = font_size.getsize(f'{players[0][1]}')
+                text = font.render(f'{players[0][1]}', True, (0, 0, 0))
+                screen.blit(text, (25 + (1210 - size[0]) // 2, 270))
+                size = font_size.getsize(f'{players[0][2]}')
+                text = font.render(f'{players[0][2]}', True, (0, 0, 0))
+                screen.blit(text, (25 + (1970 - size[0]) // 2, 270))
+            elif len(players) == 2:
+                screen.blit(white_screen_image, (50, 395))
+                for i in range(0, len(players)):
+                    size = font_size.getsize(f'{players[i][0]}')
+                    text = font.render(f'{players[i][0]}', True, (0, 0, 0))
+                    screen.blit(text, (25 + (435 - size[0]) // 2, 270 + i * 80))
+                    size = font_size.getsize(f'{players[i][1]}')
+                    text = font.render(f'{players[i][1]}', True, (0, 0, 0))
+                    screen.blit(text, (25 + (1210 - size[0]) // 2, 270 + i * 80))
+                    size = font_size.getsize(f'{players[0][2]}')
+                    text = font.render(f'{players[i][2]}', True, (0, 0, 0))
+                    screen.blit(text, (25 + (1970 - size[0]) // 2, 270 + i * 80))
+            elif len(players) == 3:
+                screen.blit(white_screen_image, (50, 475))
+                for i in range(0, len(players)):
+                    size = font_size.getsize(f'{players[i][0]}')
+                    text = font.render(f'{players[i][0]}', True, (0, 0, 0))
+                    screen.blit(text, (25 + (435 - size[0]) // 2, 270 + i * 80))
+                    size = font_size.getsize(f'{players[i][1]}')
+                    text = font.render(f'{players[i][1]}', True, (0, 0, 0))
+                    screen.blit(text, (25 + (1210 - size[0]) // 2, 270 + i * 80))
+                    size = font_size.getsize(f'{players[0][2]}')
+                    text = font.render(f'{players[i][2]}', True, (0, 0, 0))
+                    screen.blit(text, (25 + (1970 - size[0]) // 2, 270 + i * 80))
+            elif len(players) == 4:
+                screen.blit(white_screen_image, (50, 555))
+                for i in range(0, len(players)):
+                    size = font_size.getsize(f'{players[i][0]}')
+                    text = font.render(f'{players[i][0]}', True, (0, 0, 0))
+                    screen.blit(text, (25 + (435 - size[0]) // 2, 270 + i * 80))
+                    size = font_size.getsize(f'{players[i][1]}')
+                    text = font.render(f'{players[i][1]}', True, (0, 0, 0))
+                    screen.blit(text, (25 + (1210 - size[0]) // 2, 270 + i * 80))
+                    size = font_size.getsize(f'{players[0][2]}')
+                    text = font.render(f'{players[i][2]}', True, (0, 0, 0))
+                    screen.blit(text, (25 + (1970 - size[0]) // 2, 270 + i * 80))
+            elif len(players) >= 5:
+                for i in range(0, 5):
+                    size = font_size.getsize(f'{players[i][0]}')
+                    text = font.render(f'{players[i][0]}', True, (0, 0, 0))
+                    screen.blit(text, (25 + (435 - size[0]) // 2, 270 + i * 75))
+                    size = font_size.getsize(f'{players[i][1]}')
+                    text = font.render(f'{players[i][1]}', True, (0, 0, 0))
+                    screen.blit(text, (25 + (1210 - size[0]) // 2, 270 + i * 75))
+                    size = font_size.getsize(f'{players[0][2]}')
+                    text = font.render(f'{players[i][2]}', True, (0, 0, 0))
+                    screen.blit(text, (25 + (1970 - size[0]) // 2, 270 + i * 75))
+            font = pygame.font.Font("Arial.ttf", 50)
+            win_text_1 = font.render('Топ игроков за всё время:', True, (0, 0, 0))
+            win_text_2 = font.render('Нажмите Enter, чтобы перейти в главное меню.', True, (0, 0, 0))
+            screen.blit(win_text_1, (300, 50))
+            screen.blit(win_text_2, (83, 630))
+            pygame.display.flip()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                print(event.pos)
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                win_exit = 1
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN and win_exit == 1:
+                base_win = 0
+                level.win = False
+                level.number_of_level = 1
+                lobby = Main_Lobby()
+                for platform in level.platforms:
+                    platform.kill()
+                for enemy in level.enemies:
+                    enemy.kill()
+                Hero.death = False
+                level.next_level()
+                Hero.hero.kill()
+                Hero.__init__(level.enemies)
+    elif Hero.death:
+        screen.blit(game_over_image, (0, 0))
         font = pygame.font.Font("Arial.ttf", 50)
-        death_text_1 = font.render('К сожалению, вы проиграли.', True, (255, 255, 255))
-        death_text_2 = font.render('Попробуйте заново!', True, (255, 255, 255))
-        death_text_3 = font.render('Нажмите Enter, чтобы перейти в главное меню.', True, (255, 255, 255))
-        screen.blit(death_text_1, (305, 200))
-        screen.blit(death_text_2, (405, 300))
-        screen.blit(death_text_3, (83, 600))
+        death_text = font.render('Нажмите Enter, чтобы перейти в главное меню.', True, (255, 255, 255))
+        screen.blit(death_text, (83, 600))
         pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                all_sprites = pygame.sprite.Group()
                 level.number_of_level = 1
-                level.next_level()
+                lobby = Main_Lobby()
+                for platform in level.platforms:
+                    platform.kill()
+                for enemy in level.enemies:
+                    enemy.kill()
                 Hero.death = False
-                Main_Lobby()
+                level.next_level()
+                Hero.hero.kill()
                 Hero.__init__(level.enemies)
     else:
         screen.blit(background_image, (0, 0))
