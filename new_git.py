@@ -40,6 +40,8 @@ class Nickname:
     def __init__(self):
         super().__init__()
         global nickname_user
+        pygame.mixer.music.load("music/main_lobby.mp3")
+        pygame.mixer.music.play(-1)
         lobby_image = load_image('lobby.jpg')
         textinput = pygame_textinput.TextInputVisualizer()
         textinput.font_color = (255, 255, 200)
@@ -107,6 +109,7 @@ class Main_Lobby:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     pos = event.pos
                     if 750 >= pos[0] >= 500 and 500 >= pos[1] >= 400:
+                        pygame.mixer.music.stop()
                         self.time_of_game = time.time()
                         return
             pygame_widgets.update(events)
@@ -163,6 +166,8 @@ class Level(pygame.sprite.Sprite):
         except:
             self.win_time = time.time() - lobby.time_of_game
             self.win_time = round(self.win_time, 2)
+            pygame.mixer.music.load("music/win.mp3")
+            pygame.mixer.music.play(-1)
             self.win = True
 
 
@@ -274,6 +279,8 @@ class Player(pygame.sprite.Sprite):
 
         for enemy in self.enemy_collide:
             if pygame.sprite.collide_mask(self.hero, enemy):
+                pygame.mixer.music.load("music/death.mp3")
+                pygame.mixer.music.play(-1)
                 self.death = True
 
         if next_level:
@@ -337,6 +344,8 @@ game_over_image = load_image('game_over.jpg')
 win_image = load_image('win.jpg')
 white_screen_image = load_image('white_screen.png')
 level.next_level()
+pygame.mixer.music.load("music/game.mp3")
+pygame.mixer.music.play(-1)
 Hero = Player(level.enemies)
 pygame.display.flip()
 FPS = 60
@@ -373,7 +382,6 @@ while running:
                 all_nick.append(nick)
             if nickname_user in all_nick:
                 if float(name[all_nick.index(nickname_user)][1]) > level.win_time:
-                    print(name[all_nick.index(nickname_user)][1])
                     cur.execute(
                         f"""DELETE from Players WHERE Nickname = '{nickname_user}'""")
                     cur.execute(
@@ -409,52 +417,13 @@ while running:
             screen.blit(text, (980, 180))
             if len(players) == 1:
                 screen.blit(white_screen_image, (50, 315))
-                size = font_size.getsize(f'{players[0][0]}')
-                text = font.render(f'{players[0][0]}', True, (0, 0, 0))
-                screen.blit(text, (25 + (435 - size[0]) // 2, 270))
-                size = font_size.getsize(f'{players[0][1]}')
-                text = font.render(f'{players[0][1]}', True, (0, 0, 0))
-                screen.blit(text, (25 + (1210 - size[0]) // 2, 270))
-                size = font_size.getsize(f'{players[0][2]}')
-                text = font.render(f'{players[0][2]}', True, (0, 0, 0))
-                screen.blit(text, (25 + (1970 - size[0]) // 2, 270))
             elif len(players) == 2:
                 screen.blit(white_screen_image, (50, 395))
-                for i in range(0, len(players)):
-                    size = font_size.getsize(f'{players[i][0]}')
-                    text = font.render(f'{players[i][0]}', True, (0, 0, 0))
-                    screen.blit(text, (25 + (435 - size[0]) // 2, 270 + i * 80))
-                    size = font_size.getsize(f'{players[i][1]}')
-                    text = font.render(f'{players[i][1]}', True, (0, 0, 0))
-                    screen.blit(text, (25 + (1210 - size[0]) // 2, 270 + i * 80))
-                    size = font_size.getsize(f'{players[0][2]}')
-                    text = font.render(f'{players[i][2]}', True, (0, 0, 0))
-                    screen.blit(text, (25 + (1970 - size[0]) // 2, 270 + i * 80))
             elif len(players) == 3:
                 screen.blit(white_screen_image, (50, 475))
-                for i in range(0, len(players)):
-                    size = font_size.getsize(f'{players[i][0]}')
-                    text = font.render(f'{players[i][0]}', True, (0, 0, 0))
-                    screen.blit(text, (25 + (435 - size[0]) // 2, 270 + i * 80))
-                    size = font_size.getsize(f'{players[i][1]}')
-                    text = font.render(f'{players[i][1]}', True, (0, 0, 0))
-                    screen.blit(text, (25 + (1210 - size[0]) // 2, 270 + i * 80))
-                    size = font_size.getsize(f'{players[0][2]}')
-                    text = font.render(f'{players[i][2]}', True, (0, 0, 0))
-                    screen.blit(text, (25 + (1970 - size[0]) // 2, 270 + i * 80))
             elif len(players) == 4:
                 screen.blit(white_screen_image, (50, 555))
-                for i in range(0, len(players)):
-                    size = font_size.getsize(f'{players[i][0]}')
-                    text = font.render(f'{players[i][0]}', True, (0, 0, 0))
-                    screen.blit(text, (25 + (435 - size[0]) // 2, 270 + i * 80))
-                    size = font_size.getsize(f'{players[i][1]}')
-                    text = font.render(f'{players[i][1]}', True, (0, 0, 0))
-                    screen.blit(text, (25 + (1210 - size[0]) // 2, 270 + i * 80))
-                    size = font_size.getsize(f'{players[0][2]}')
-                    text = font.render(f'{players[i][2]}', True, (0, 0, 0))
-                    screen.blit(text, (25 + (1970 - size[0]) // 2, 270 + i * 80))
-            elif len(players) >= 5:
+            if len(players) >= 5:
                 for i in range(0, 5):
                     size = font_size.getsize(f'{players[i][0]}')
                     text = font.render(f'{players[i][0]}', True, (0, 0, 0))
@@ -465,6 +434,17 @@ while running:
                     size = font_size.getsize(f'{players[0][2]}')
                     text = font.render(f'{players[i][2]}', True, (0, 0, 0))
                     screen.blit(text, (25 + (1970 - size[0]) // 2, 270 + i * 75))
+            else:
+                for i in range(0, len(players)):
+                    size = font_size.getsize(f'{players[i][0]}')
+                    text = font.render(f'{players[i][0]}', True, (0, 0, 0))
+                    screen.blit(text, (25 + (435 - size[0]) // 2, 270 + i * 80))
+                    size = font_size.getsize(f'{players[i][1]}')
+                    text = font.render(f'{players[i][1]}', True, (0, 0, 0))
+                    screen.blit(text, (25 + (1210 - size[0]) // 2, 270 + i * 80))
+                    size = font_size.getsize(f'{players[0][2]}')
+                    text = font.render(f'{players[i][2]}', True, (0, 0, 0))
+                    screen.blit(text, (25 + (1970 - size[0]) // 2, 270 + i * 80))
             font = pygame.font.Font("Arial.ttf", 50)
             win_text_1 = font.render('Топ игроков за всё время:', True, (0, 0, 0))
             win_text_2 = font.render('Нажмите Enter, чтобы перейти в главное меню.', True, (0, 0, 0))
@@ -480,14 +460,20 @@ while running:
                 win_exit = 1
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN and win_exit == 1:
                 base_win = 0
+                win_exit = 0
                 level.win = False
                 level.number_of_level = 1
+                pygame.mixer.music.stop()
+                pygame.mixer.music.load("music/main_lobby.mp3")
+                pygame.mixer.music.play(-1)
                 lobby = Main_Lobby()
                 for platform in level.platforms:
                     platform.kill()
                 for enemy in level.enemies:
                     enemy.kill()
                 Hero.death = False
+                pygame.mixer.music.load("music/game.mp3")
+                pygame.mixer.music.play(-1)
                 level.next_level()
                 Hero.hero.kill()
                 Hero.__init__(level.enemies)
@@ -502,12 +488,17 @@ while running:
                 running = False
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 level.number_of_level = 1
+                pygame.mixer.music.stop()
+                pygame.mixer.music.load("music/main_lobby.mp3")
+                pygame.mixer.music.play(-1)
                 lobby = Main_Lobby()
                 for platform in level.platforms:
                     platform.kill()
                 for enemy in level.enemies:
                     enemy.kill()
                 Hero.death = False
+                pygame.mixer.music.load("music/game.mp3")
+                pygame.mixer.music.play(-1)
                 level.next_level()
                 Hero.hero.kill()
                 Hero.__init__(level.enemies)
