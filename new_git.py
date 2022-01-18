@@ -122,6 +122,7 @@ class Level(pygame.sprite.Sprite):
         self.win = False
         self.win_time = 0
         self.number_of_level = 1
+        self.old_n_o_l = 1
         self.platforms = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
 
@@ -159,9 +160,10 @@ class Level(pygame.sprite.Sprite):
                 Platform(platform[0], platform[1], self.platforms, all_sprites)
             for enemy in enemies_on_level:
                 Enemy(enemy[0], enemy[1], enemy[2], enemy[3], enemy[4], self.enemies, all_sprites)
-            if self.number_of_level == 2:
+            if self.number_of_level != self.old_n_o_l:
                 Hero.hero.kill()
                 Hero.__init__(level.enemies)
+                self.old_n_o_l = self.number_of_level
             pygame.display.flip()
         except:
             self.win_time = time.time() - lobby.time_of_game
