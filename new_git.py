@@ -40,7 +40,7 @@ class Nickname:
     def __init__(self):
         super().__init__()
         global nickname_user
-        pygame.mixer.music.load("music/main_lobby.mp3")
+        pygame.mixer.music.load("music\lobby1.mp3")
         pygame.mixer.music.play(-1)
         lobby_image = load_image('lobby.jpg')
         textinput = pygame_textinput.TextInputVisualizer()
@@ -311,7 +311,11 @@ class Enemy(pygame.sprite.Sprite):
         self.walk_left_e = True
         self.fall_size_e = 1
         self.walk_count = random.choice(range(0, 5))
-        self.image = self.enemy_images_walk[self.walk_count]
+        if level.number_of_level == 4:
+            self.image = load_image('fireball.png', size)
+            self.image = pygame.transform.flip(self.image, True, False)
+        else:
+            self.image = self.enemy_images_walk[self.walk_count]
         self.rect = self.image.get_rect()
         self.rect.center = cords
         self.enemy_speed = speed
@@ -320,21 +324,25 @@ class Enemy(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
 
     def update_e(self):
-        self.image = self.enemy_images_walk[int(self.walk_count // 1)]
-
-        if self.walk_left_e:
-            self.image = pygame.transform.flip(self.enemy_images_walk[int(self.walk_count // 1)], True, False)
-            self.walk_count = (self.walk_count + 0.2) % 5
-            self.rect.x -= self.enemy_speed
-        elif self.walk_right_e:
-            self.walk_count = (self.walk_count + 0.2) % 5
+        if level.number_of_level == 4:
+            if self.rect.x > 1380:
+                self.rect.x = -100
             self.rect.x += self.enemy_speed
-        if self.rect.x <= self.b_l:
-            self.walk_right_e = True
-            self.walk_left_e = False
-        elif self.rect.x >= self.b_r:
-            self.walk_right_e = False
-            self.walk_left_e = True
+        else:
+            self.image = self.enemy_images_walk[int(self.walk_count // 1)]
+            if self.walk_left_e:
+                self.image = pygame.transform.flip(self.enemy_images_walk[int(self.walk_count // 1)], True, False)
+                self.walk_count = (self.walk_count + 0.2) % 5
+                self.rect.x -= self.enemy_speed
+            elif self.walk_right_e:
+                self.walk_count = (self.walk_count + 0.2) % 5
+                self.rect.x += self.enemy_speed
+            if self.rect.x <= self.b_l:
+                self.walk_right_e = True
+                self.walk_left_e = False
+            elif self.rect.x >= self.b_r:
+                self.walk_right_e = False
+                self.walk_left_e = True
 
 
 level = Level()
@@ -346,7 +354,7 @@ game_over_image = load_image('game_over.jpg')
 win_image = load_image('win.jpg')
 white_screen_image = load_image('white_screen.png')
 level.next_level()
-pygame.mixer.music.load("music/game.mp3")
+pygame.mixer.music.load("music/game1.mp3")
 pygame.mixer.music.play(-1)
 Hero = Player(level.enemies)
 pygame.display.flip()
@@ -466,7 +474,7 @@ while running:
                 level.win = False
                 level.number_of_level = 1
                 pygame.mixer.music.stop()
-                pygame.mixer.music.load("music/main_lobby.mp3")
+                pygame.mixer.music.load("music/lobby1.mp3")
                 pygame.mixer.music.play(-1)
                 lobby = Main_Lobby()
                 for platform in level.platforms:
@@ -474,7 +482,7 @@ while running:
                 for enemy in level.enemies:
                     enemy.kill()
                 Hero.death = False
-                pygame.mixer.music.load("music/game.mp3")
+                pygame.mixer.music.load("music/game1.mp3")
                 pygame.mixer.music.play(-1)
                 level.next_level()
                 Hero.hero.kill()
@@ -491,7 +499,7 @@ while running:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 level.number_of_level = 1
                 pygame.mixer.music.stop()
-                pygame.mixer.music.load("music/main_lobby.mp3")
+                pygame.mixer.music.load("music/lobby1.mp3")
                 pygame.mixer.music.play(-1)
                 lobby = Main_Lobby()
                 for platform in level.platforms:
@@ -499,7 +507,7 @@ while running:
                 for enemy in level.enemies:
                     enemy.kill()
                 Hero.death = False
-                pygame.mixer.music.load("music/game.mp3")
+                pygame.mixer.music.load("music/game1.mp3")
                 pygame.mixer.music.play(-1)
                 level.next_level()
                 Hero.hero.kill()
