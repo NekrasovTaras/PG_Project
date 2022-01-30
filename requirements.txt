@@ -1,0 +1,4 @@
+pygame
+pygame_textinput
+pygame_widgets
+Pillow

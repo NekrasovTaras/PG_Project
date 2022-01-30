@@ -10,7 +10,6 @@ import time
 from PIL import ImageFont
 from pygame_widgets.button import Button
 
-
 con = sqlite3.connect('game_base.sqlite')
 cur = con.cursor()
 pygame.init()
@@ -314,6 +313,10 @@ class Enemy(pygame.sprite.Sprite):
         if level.number_of_level == 4:
             self.image = load_image('fireball.png', size)
             self.image = pygame.transform.flip(self.image, True, False)
+        elif level.number_of_level == 5:
+            self.image = load_image('fireball.png', size)
+            self.image = pygame.transform.flip(self.image, False, True)
+            self.image = pygame.transform.rotate(self.image, 90)
         else:
             self.image = self.enemy_images_walk[self.walk_count]
         self.rect = self.image.get_rect()
@@ -328,6 +331,10 @@ class Enemy(pygame.sprite.Sprite):
             if self.rect.x > 1380:
                 self.rect.x = -100
             self.rect.x += self.enemy_speed
+        elif level.number_of_level == 5:
+            if self.rect.y > 820:
+                self.rect.y = -100
+            self.rect.y += self.enemy_speed
         else:
             self.image = self.enemy_images_walk[int(self.walk_count // 1)]
             if self.walk_left_e:
@@ -421,7 +428,7 @@ while running:
             font = pygame.font.Font("Arial.ttf", 25)
             text = font.render(f'Никнейм:', True, (0, 0, 0))
             screen.blit(text, (180, 180))
-            text = font.render(f'Время(в секунда):', True, (0, 0, 0))
+            text = font.render(f'Время(в секундах):', True, (0, 0, 0))
             screen.blit(text, (525, 180))
             text = font.render(f'Дата:', True, (0, 0, 0))
             screen.blit(text, (980, 180))
@@ -464,8 +471,6 @@ while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                print(event.pos)
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 win_exit = 1
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN and win_exit == 1:
